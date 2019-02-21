@@ -345,3 +345,89 @@ This is outside of our capabilities here at PDFShift as we can't enforce a reade
 
 ### Real life example - Sending an invoice by email
 
+One frequent use of PDFShift is to generate an invoice when receiving a payment, and sending that invoice - in PDF format - by email, to the customer.
+
+For this, we’re going to look at sending an email with attachments – using the core Java mail library. You will need the Java mail library in your path. If your project is a maven project, add the following lines in your pom.xml
+
+```xml
+<dependency>
+    <groupId>javax.mail</groupId>
+    <artifactId>mail</artifactId>
+    <version>1.5.0-b01</version>
+</dependency>
+```
+
+If it's a gradle project then add this to your dependencies
+
+```groovy
+    compile 'javax.mail:mail:1.5.0-b01'
+```
+
+For this tutorial I'll use this email service https://mailtrap.io. It's a fake email service provider used for development purposes. Create a free account on https://mailtrap.io and you'll get a username and password to use here. You can convert and send email using the code below
+
+```java
+private static void sendEmail() throws Exception {
+    var httpRequest = HttpRequest.newBuilder()
+            .uri(URI.create("https://api.pdfshift.io/v2/convert"))
+            .timeout(Duration.ofSeconds(10))
+            .header("Content-Type", "application/json")
+            .header("Authentication", API_KEY)
+            .POST(HttpRequest.BodyPublishers.ofFile(Paths.get("src/main/resources/body.json")))
+            .build();
+
+    var httpClient = HttpClient.newBuilder()
+            .version(HttpClient.Version.HTTP_1_1)
+            .build();
+    var response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofInputStream());
+
+    var statusCode = response.statusCode();
+    if (statusCode == 200 || statusCode == 201) {
+        // save pdf to file targetFile.pdf
+        var targetFile = new File("src/main/resources/targetFile.pdf");
+        Files.copy(response.body(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+        // Send pdf as email attachment
+        var prop = new Properties();
+        prop.put("mail.smtp.auth", true);
+        prop.put("mail.smtp.starttls.enable", "true");
+        prop.put("mail.smtp.host", "smtp.mailtrap.io");
+        prop.put("mail.smtp.port", "25");
+        prop.put("mail.smtp.ssl.trus", "smtp.mailtrap.io");
+
+        var username = "get username from mailtrap.io";
+        var password = "get password from mailtrap.io";
+
+        var session = Session.getInstance(prop, new Authenticator() {
+            @Override
+            protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication(username, password);
+            }
+        });
+
+        var message = new MimeMessage(session);
+        message.setFrom(new InternetAddress("from@gmail.com"));
+        message.setRecipients(
+                Message.RecipientType.TO, InternetAddress.parse("to@gmail.com")
+        );
+        message.setSubject("Mail Subject");
+
+        var attachment = new File("src/main/resources/targetFile.pdf");
+
+        var mimeBodyPart = new MimeBodyPart();
+        mimeBodyPart.setContent("Just ignore this message", "text/plain");
+        mimeBodyPart.attachFile(attachment);
+
+        var multipart = new MimeMultipart();
+        multipart.addBodyPart(mimeBodyPart);
+
+        message.setContent(multipart);
+
+        Transport.send(message);
+    } else {
+        System.out.println("Error occured");
+    }
+}
+```
+
+
+
