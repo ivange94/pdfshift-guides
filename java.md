@@ -12,6 +12,23 @@ We use Java 11 here to avoid adding extra level of dependency.
 ### Requirements
 
 * Java 11
+* org.json
+
+If you use maven for dependency management add 
+
+```xml
+<dependency>
+    <groupId>org.json</groupId>
+    <artifactId>json</artifactId>
+    <version>20180130</version>
+</dependency>
+```
+
+If you use gradle, add
+
+```groovy
+compile "org.json:json:20180130"
+```
 
 ## Usage
 
@@ -19,47 +36,92 @@ Your HTTP requests needs to be configured with your `api_key` received when crea
 Setting it is easy as:
 
 ```java
-public void convert() throws Exception {
-    var httpRequest = HttpRequest.newBuilder()
-            .uri(URI.create("https://api.pdfshift.io/v2/convert"))
-            .timeout(Duration.ofSeconds(20))
-            .header("Content-Type", "application/json")
-            .header("Authentication", API_KEY)
-            .POST(HttpRequest.BodyPublishers.ofFile(Paths.get("src/main/resources/body.json")))
-            .build();
+import java.io.File;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.time.Duration;
+import org.json.JSONObject;
 
-    var httpClient = HttpClient.newBuilder()
-            .version(HttpClient.Version.HTTP_1_1)
-            .build();
+public class Application {
 
-    var response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofInputStream());
+    private static final String API_KEY = "";
 
-    // Save the file locally
-    var targetFile = new File("src/main/resources/targetFile.pdf");
-    Files.copy(response.body(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-}
-```
+    public static void main(String... args) throws Exception {
+        var jsonObject = new JSONObject();
+        jsonObject.put("source", "https://example.com");
+        jsonObject.put("sandbox", true);
 
-Here we stored our json body inside a file called body.json in the projects resources folder. The contents of that file is
+        var httpRequest = HttpRequest.newBuilder()
+                .uri(URI.create("https://api.pdfshift.io/v2/convert"))
+                .timeout(Duration.ofSeconds(20))
+                .header("Content-Type", "application/json")
+                .header("Authentication", API_KEY)
+                .POST(HttpRequest.BodyPublishers.ofString(jsonObject.toString()))
+                .build();
 
-```json
-{
-    "source": "https://example.com",
-    "sandbox": true
+        var httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .build();
+
+        var response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofInputStream());
+
+        // Save the file locally
+        var targetFile = new File("src/main/resources/targetFile.pdf");
+        Files.copy(response.body(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+    }
 }
 ```
 
 We also highly recommend checking for errors after the conversion is made, before processing the document, in order to avoid issues later on.
-This can be easily handled with `requests` by doing the following:
 
 ```java
-var statusCode = response.statusCode();
-if (statusCode == 200 || statusCode == 201) {
-    // save file locally
-    var targetFile = new File("src/main/resources/targetFile.pdf");
-    Files.copy(response.body(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-} else {
-   // error occurred
+import java.io.File;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.time.Duration;
+import org.json.JSONObject;
+
+public class Application {
+
+    private static final String API_KEY = "";
+
+    public static void main(String... args) throws Exception {
+        var jsonObject = new JSONObject();
+        jsonObject.put("source", "https://example.com");
+        jsonObject.put("sandbox", true);
+        var httpRequest = HttpRequest.newBuilder()
+                .uri(URI.create("https://api.pdfshift.io/v2/convert"))
+                .timeout(Duration.ofSeconds(20))
+                .header("Content-Type", "application/json")
+                .header("Authentication", API_KEY)
+                .POST(HttpRequest.BodyPublishers.ofString(jsonObject.toString()))
+                .build();
+
+        var httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .build();
+
+        var response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofInputStream());
+
+        var statusCode = response.statusCode();
+        if (statusCode == 200 || statusCode == 201) {
+            // Save the file locally
+            var targetFile = new File("src/main/resources/targetFile.pdf");
+            Files.copy(response.body(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        } else {
+            // error occurred
+        }
+    }
 }
 ```
 
@@ -71,37 +133,47 @@ No credits are deduced from your account when the sandbox mode is on.
 Converting an URL with PDFShift is really easy. All you have to do is send a POST request with the `source` parameter set to the URL, like the following:
 
 ```java
-public void convert() throws Exception {
-    var httpRequest = HttpRequest.newBuilder()
-            .uri(URI.create("https://api.pdfshift.io/v2/convert"))
-            .timeout(Duration.ofSeconds(20))
-            .header("Content-Type", "application/json")
-            .header("Authentication", API_KEY)
-            .POST(HttpRequest.BodyPublishers.ofFile(Paths.get("src/main/resources/body.json")))
-            .build();
+import java.io.File;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.time.Duration;
+import org.json.JSONObject;
 
-    var httpClient = HttpClient.newBuilder()
-            .version(HttpClient.Version.HTTP_1_1)
-            .build();
+public class Application {
 
-    var response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofInputStream());
+    private static final String API_KEY = "";
 
-    // Save the file locally
-    var statusCode = response.statusCode();
-    if (statusCode == 200 || statusCode == 201) {
-        var targetFile = new File("src/main/resources/targetFile.pdf");
-        Files.copy(response.body(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-    } else {
-        // error occurred
+    public static void main(String... args) throws Exception {
+        var jsonObject = new JSONObject();
+        jsonObject.put("source", "https://example.com");
+        var httpRequest = HttpRequest.newBuilder()
+                .uri(URI.create("https://api.pdfshift.io/v2/convert"))
+                .timeout(Duration.ofSeconds(20))
+                .header("Content-Type", "application/json")
+                .header("Authentication", API_KEY)
+                .POST(HttpRequest.BodyPublishers.ofString(jsonObject.toString()))
+                .build();
+
+        var httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .build();
+
+        var response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofInputStream());
+
+        var statusCode = response.statusCode();
+        if (statusCode == 200 || statusCode == 201) {
+            // Save the file locally
+            var targetFile = new File("src/main/resources/targetFile.pdf");
+            Files.copy(response.body(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        } else {
+            // error occurred
+        }
     }
-}
-```
-
-body.json
-```json
-{
-    "source": "https://example.com",
-    "sandbox": true
 }
 ```
 
@@ -109,73 +181,104 @@ body.json
 
 To convert a raw HTML data with PDFShift, simply send the raw string in the `source` parameter:
 
-body.json
-```json
-{
-  "source": "<html><head><title>Hello world</title><body><h1>Hello World</h1></body></head></html>",
-  "sandbox": true
-}
-```
-
 ```java
-public static void main(String... args) throws Exception {
-    var httpRequest = HttpRequest.newBuilder()
-            .uri(URI.create("https://api.pdfshift.io/v2/convert"))
-            .timeout(Duration.ofSeconds(10))
-            .header("Content-Type", "application/json")
-            .header("Authentication", API_KEY)
-            .POST(HttpRequest.BodyPublishers.ofFile(Paths.get("src/main/resources/body.json")))
-            .build();
+import org.json.JSONObject;
 
-    var httpClient = HttpClient.newBuilder()
-            .version(HttpClient.Version.HTTP_1_1)
-            .build();
-    var response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofInputStream());
+import java.io.File;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.time.Duration;
 
-    var statusCode = response.statusCode();
-    if (statusCode == 200 || statusCode == 201) {
-        // success
-    } else {
-        // error occurred
+public class Application {
+
+    private static final String API_KEY = "";
+
+    public static void main(String... args) throws Exception {
+        byte[] encoded = Files.readAllBytes(Paths.get("src/main/resources/example.html"));
+        String documentContent = new String(encoded, Charset.defaultCharset());
+
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("source", documentContent);
+        var httpRequest = HttpRequest.newBuilder()
+                .uri(URI.create("https://api.pdfshift.io/v2/convert"))
+                .timeout(Duration.ofSeconds(20))
+                .header("Content-Type", "application/json")
+                .header("Authentication", API_KEY)
+                .POST(HttpRequest.BodyPublishers.ofString(jsonObject.toString()))
+                .build();
+
+        var httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .build();
+
+        var response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofInputStream());
+
+        var statusCode = response.statusCode();
+        if (statusCode == 200 || statusCode == 201) {
+            // Save the file locally
+            var targetFile = new File("src/main/resources/targetFile.pdf");
+            Files.copy(response.body(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        } else {
+            // error occurred
+        }
     }
 }
 ```
-
 
 ### Save the file to Amazon S3 and get an URL instead
 
 By passing the `filename` parameter to your request, you will receive a JSON response instead of the binary PDF, with a `url` key that contains the path to the file stored on Amazon S3.
 All files stored on Amazon S3 are kept for two days, then automatically deleted.
 
-body.json
-```json
-{
-  "source": "<html><head><title>Hello world</title><body><h1>Hello World</h1></body></head></html>",
-  "filename": "result.pdf",
-  "sandbox": true
-}
-```
-
 ```java
-public static void main(String... args) throws Exception {
-    var httpRequest = HttpRequest.newBuilder()
-            .uri(URI.create("https://api.pdfshift.io/v2/convert"))
-            .timeout(Duration.ofSeconds(10))
-            .header("Content-Type", "application/json")
-            .header("Authentication", API_KEY)
-            .POST(HttpRequest.BodyPublishers.ofFile(Paths.get("src/main/resources/body.json")))
-            .build();
+import java.io.File;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.time.Duration;
+import org.json.JSONObject;
 
-    var httpClient = HttpClient.newBuilder()
-            .version(HttpClient.Version.HTTP_1_1)
-            .build();
-    var response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+public class Application {
 
-    var statusCode = response.statusCode();
-    if (statusCode == 200 || statusCode == 201) {
-        // Response body is a json string. You can use an external library to convert this to an object
-    } else {
-        // an error occurred
+    private static final String API_KEY = "";
+
+    public static void main(String... args) throws Exception {
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("source", "https://example.com");
+        jsonObject.put("filename", "result.pdf");
+        
+        var httpRequest = HttpRequest.newBuilder()
+                .uri(URI.create("https://api.pdfshift.io/v2/convert"))
+                .timeout(Duration.ofSeconds(20))
+                .header("Content-Type", "application/json")
+                .header("Authentication", API_KEY)
+                .POST(HttpRequest.BodyPublishers.ofFile(Paths.get("src/main/resources/body.json")))
+                .build();
+
+        var httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .build();
+
+        var response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+
+        var statusCode = response.statusCode();
+        if (statusCode == 200 || statusCode == 201) {
+            // Response body is a json string. 
+            var result = new JSONObject(response.body());
+            System.out.println(result.get("url"));
+        } else {
+            // error occurred
+        }
     }
 }
 ```
@@ -184,38 +287,54 @@ public static void main(String... args) throws Exception {
 
 If your `source` requires a BASIC AUTH mechanism, you can either use the custom headers part or use the `auth` parameter from the API that behaves the same.
 
-body.json
-```json
-{
-  "source": "https://httpbin.org/basic-auth/user/passwd",
-  "auth": {
-      "username": "user",
-      "password": "passwd"
-  },
-  "sandbox": true
-}
-```
 ```java
-public static void main(String... args) throws Exception {
-    var httpRequest = HttpRequest.newBuilder()
-            .uri(URI.create("https://api.pdfshift.io/v2/convert"))
-            .timeout(Duration.ofSeconds(10))
-            .header("Content-Type", "application/json")
-            .header("Authentication", API_KEY)
-            .POST(HttpRequest.BodyPublishers.ofFile(Paths.get("src/main/resources/body.json")))
-            .build();
+import java.io.File;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.time.Duration;
+import org.json.JSONObject;
 
-    var httpClient = HttpClient.newBuilder()
-            .version(HttpClient.Version.HTTP_1_1)
-            .build();
-    var response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofInputStream());
+public class Application {
 
-    var statusCode = response.statusCode();
-    if (statusCode == 200 || statusCode == 201) {
-        var targetFile = new File("src/main/resources/targetFile.pdf");
-        Files.copy(response.body(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-    } else {
-        // an error occurred
+    private static final String API_KEY = "";
+
+    public static void main(String... args) throws Exception {
+        var jsonObject = new JSONObject();
+        jsonObject.put("source", "https://httpbin.org/basic-auth/user/passwd");
+
+        var auth = new JSONObject();
+        auth.put("username", "user");
+        auth.put("password", "passwd");
+        
+        jsonObject.put("auth", auth);
+
+        var httpRequest = HttpRequest.newBuilder()
+                .uri(URI.create("https://api.pdfshift.io/v2/convert"))
+                .timeout(Duration.ofSeconds(20))
+                .header("Content-Type", "application/json")
+                .header("Authentication", API_KEY)
+                .POST(HttpRequest.BodyPublishers.ofString(jsonObject.toString()))
+                .build();
+
+        var httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .build();
+
+        var response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofInputStream());
+
+        var statusCode = response.statusCode();
+        if (statusCode == 200 || statusCode == 201) {
+            // Save the file locally
+            var targetFile = new File("src/main/resources/targetFile.pdf");
+            Files.copy(response.body(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        } else {
+            // error occurred
+        }
     }
 }
 ```
@@ -234,25 +353,57 @@ body.json
 ```
 
 ```java
-public static void main(String... args) throws Exception {
-    var httpRequest = HttpRequest.newBuilder()
-            .uri(URI.create("https://api.pdfshift.io/v2/convert"))
-            .timeout(Duration.ofSeconds(10))
-            .header("Content-Type", "application/json")
-            .header("Authentication", API_KEY)
-            .POST(HttpRequest.BodyPublishers.ofFile(Paths.get("src/main/resources/body.json")))
-            .build();
+import java.io.File;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.time.Duration;
+import org.json.JSONObject;
+import org.json.JSONArray;
 
-    var httpClient = HttpClient.newBuilder()
-            .version(HttpClient.Version.HTTP_1_1)
-            .build();
-    var response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+public class Application {
 
-    var statusCode = response.statusCode();
-    if (statusCode == 200 || statusCode == 201) {
-        
-    } else {
-        // an error occurred
+    private static final String API_KEY = "";
+
+    public static void main(String... args) throws Exception {
+        var jsonObject = new JSONObject();
+        jsonObject.put("source", "https://httpbin.org/cookies");
+
+        var cookie = new JSONObject();
+        cookie.put("name", "session");
+        cookie.put("value", "4cb496a8-a3eb-4a7e-a704-f993cb6a4dac");
+
+        var cookies = new JSONArray();
+        cookies.put(cookie);
+
+        jsonObject.put("cookies", cookies);
+
+        var httpRequest = HttpRequest.newBuilder()
+                .uri(URI.create("https://api.pdfshift.io/v2/convert"))
+                .timeout(Duration.ofSeconds(20))
+                .header("Content-Type", "application/json")
+                .header("Authentication", API_KEY)
+                .POST(HttpRequest.BodyPublishers.ofString(jsonObject.toString()))
+                .build();
+
+        var httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .build();
+
+        var response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofInputStream());
+
+        var statusCode = response.statusCode();
+        if (statusCode == 200 || statusCode == 201) {
+            // Save the file locally
+            var targetFile = new File("src/main/resources/targetFile.pdf");
+            Files.copy(response.body(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        } else {
+            // error occurred
+        }
     }
 }
 ```
@@ -265,11 +416,50 @@ This allows you to customize the rendering of the page.
 
 You can also call multiple CSS by calling a root CSS (like "print.css" in that case) that will call @import in it for each CSS files.
 
-```json
-{
-  "source": "https://www.example.com",
-  "css": "https://www.example.com/public/css/print.css",
-  "sandbox": true
+```java
+import java.io.File;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.time.Duration;
+import org.json.JSONObject;
+
+public class Application {
+
+    private static final String API_KEY = "";
+
+    public static void main(String... args) throws Exception {
+        var jsonObject = new JSONObject();
+        jsonObject.put("source", "https://www.example.com");
+        jsonObject.put("css", "https://www.example.com/public/css/print.css");
+
+        var httpRequest = HttpRequest.newBuilder()
+                .uri(URI.create("https://api.pdfshift.io/v2/convert"))
+                .timeout(Duration.ofSeconds(20))
+                .header("Content-Type", "application/json")
+                .header("Authentication", API_KEY)
+                .POST(HttpRequest.BodyPublishers.ofString(jsonObject.toString()))
+                .build();
+
+        var httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .build();
+
+        var response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofInputStream());
+
+        var statusCode = response.statusCode();
+        if (statusCode == 200 || statusCode == 201) {
+            // Save the file locally
+            var targetFile = new File("src/main/resources/targetFile.pdf");
+            Files.copy(response.body(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        } else {
+            // error occurred
+        }
+    }
 }
 ```
 
@@ -278,11 +468,50 @@ You can also call multiple CSS by calling a root CSS (like "print.css" in that c
 
 Like for the `source` parameter, you can pass a raw set of CSS rules to the `css` parameter and they will be injected to the loaded document.
 
-```json
-{
-  "source": "https://www.example.com",
-  "css": "a {text-decoration: underline; color: blue}",
-  "sandbox": true
+```java
+import java.io.File;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.time.Duration;
+import org.json.JSONObject;
+
+public class Application {
+
+    private static final String API_KEY = "";
+
+    public static void main(String... args) throws Exception {
+        var jsonObject = new JSONObject();
+        jsonObject.put("source", "https://www.example.com");
+        jsonObject.put("css", "a {text-decoration: underline; color: blue}");
+
+        var httpRequest = HttpRequest.newBuilder()
+                .uri(URI.create("https://api.pdfshift.io/v2/convert"))
+                .timeout(Duration.ofSeconds(20))
+                .header("Content-Type", "application/json")
+                .header("Authentication", API_KEY)
+                .POST(HttpRequest.BodyPublishers.ofString(jsonObject.toString()))
+                .build();
+
+        var httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .build();
+
+        var response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofInputStream());
+
+        var statusCode = response.statusCode();
+        if (statusCode == 200 || statusCode == 201) {
+            // Save the file locally
+            var targetFile = new File("src/main/resources/targetFile.pdf");
+            Files.copy(response.body(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        } else {
+            // error occurred
+        }
+    }
 }
 ```
 
@@ -290,16 +519,57 @@ Like for the `source` parameter, you can pass a raw set of CSS rules to the `css
 
 Some documents that you share need a watermark to clearly identify your brand. That's easy with PDFShift:
 
-```json
-{
-  "source": "https://www.example.com",
-  "watermark": {
-    "image": "https://pdfshift.io/static/img/logo.png",
-    "offset_x": 50,
-    "offset_y": "100px",
-    "rotate": 45
-  },
-  "sandbox": true
+```java
+import java.io.File;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.time.Duration;
+import org.json.JSONObject;
+
+public class Application {
+
+    private static final String API_KEY = "";
+
+    public static void main(String... args) throws Exception {
+        var jsonObject = new JSONObject();
+        jsonObject.put("source", "https://www.example.com");
+        
+        var watermark = new JSONObject();
+        watermark.put("image", "https://pdfshift.io/static/img/logo.png");
+        watermark.put("offset_x", 50);
+        watermark.put("offset_y", "100px");
+        watermark.put("rotate", 45);
+
+        jsonObject.put("watermark", watermark);
+
+        var httpRequest = HttpRequest.newBuilder()
+                .uri(URI.create("https://api.pdfshift.io/v2/convert"))
+                .timeout(Duration.ofSeconds(20))
+                .header("Content-Type", "application/json")
+                .header("Authentication", API_KEY)
+                .POST(HttpRequest.BodyPublishers.ofString(jsonObject.toString()))
+                .build();
+
+        var httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .build();
+
+        var response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofInputStream());
+
+        var statusCode = response.statusCode();
+        if (statusCode == 200 || statusCode == 201) {
+            // Save the file locally
+            var targetFile = new File("src/main/resources/targetFile.pdf");
+            Files.copy(response.body(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        } else {
+            // error occurred
+        }
+    }
 }
 ```
 
@@ -310,14 +580,55 @@ You can add some custom header or footer to your generated document. These are o
 Note that the header and footer **are not related to the body**. For this reason, the CSS in your body doesn't apply to your header/footer.
 By default, the font-size will be really small. You will have to set it manually, like in the following example:
 
-```json
-{
-  "source": "https://www.example.com",
-  "footer": {
-    "source": "<div>My custom footer",
-    "spacing": "50px"
-  },
-  "sandbox": true
+```java
+import java.io.File;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.time.Duration;
+import org.json.JSONObject;
+
+public class Application {
+
+    private static final String API_KEY = "";
+
+    public static void main(String... args) throws Exception {
+        var jsonObject = new JSONObject();
+        jsonObject.put("source", "https://www.example.com");
+
+        var footer = new JSONObject();
+        footer.put("source", "<div>My custom footer</div>");
+        footer.put("spacing", "50px");
+
+        jsonObject.put("footer", footer);
+
+        var httpRequest = HttpRequest.newBuilder()
+                .uri(URI.create("https://api.pdfshift.io/v2/convert"))
+                .timeout(Duration.ofSeconds(20))
+                .header("Content-Type", "application/json")
+                .header("Authentication", API_KEY)
+                .POST(HttpRequest.BodyPublishers.ofString(jsonObject.toString()))
+                .build();
+
+        var httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .build();
+
+        var response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofInputStream());
+
+        var statusCode = response.statusCode();
+        if (statusCode == 200 || statusCode == 201) {
+            // Save the file locally
+            var targetFile = new File("src/main/resources/targetFile.pdf");
+            Files.copy(response.body(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        } else {
+            // error occurred
+        }
+    }
 }
 ```
 
@@ -331,14 +642,56 @@ This means that if you set an empty password for the user, with no rights to pri
 
 This is outside of our capabilities here at PDFShift as we can't enforce a reader to respect PDF's standard.
 
-```json
-{
-  "source": "https://www.example.com",
-  "protection": {
-    "user_password": "user",
-    "owner_password": "owner",
-    "no_print": true
-  }
+```java
+import java.io.File;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.time.Duration;
+import org.json.JSONObject;
+
+public class Application {
+
+    private static final String API_KEY = "";
+
+    public static void main(String... args) throws Exception {
+        var jsonObject = new JSONObject();
+        jsonObject.put("source", "https://www.example.com");
+
+        var protection = new JSONObject();
+        protection.put("user_password", "user");
+        protection.put("owner_password", "owner");
+        protection.put("no_print", true);
+
+        jsonObject.put("protection", protection);
+
+        var httpRequest = HttpRequest.newBuilder()
+                .uri(URI.create("https://api.pdfshift.io/v2/convert"))
+                .timeout(Duration.ofSeconds(20))
+                .header("Content-Type", "application/json")
+                .header("Authentication", API_KEY)
+                .POST(HttpRequest.BodyPublishers.ofString(jsonObject.toString()))
+                .build();
+
+        var httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .build();
+
+        var response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofInputStream());
+
+        var statusCode = response.statusCode();
+        if (statusCode == 200 || statusCode == 201) {
+            // Save the file locally
+            var targetFile = new File("src/main/resources/targetFile.pdf");
+            Files.copy(response.body(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        } else {
+            // error occurred
+        }
+    }
 }
 ```
 
@@ -366,67 +719,98 @@ If it's a gradle project then add this to your dependencies
 For this tutorial I'll use this email service https://mailtrap.io. It's a fake email service provider used for development purposes. Create a free account on https://mailtrap.io and you'll get a username and password to use here. You can convert and send email using the code below
 
 ```java
-private static void sendEmail() throws Exception {
-    var httpRequest = HttpRequest.newBuilder()
-            .uri(URI.create("https://api.pdfshift.io/v2/convert"))
-            .timeout(Duration.ofSeconds(10))
-            .header("Content-Type", "application/json")
-            .header("Authentication", API_KEY)
-            .POST(HttpRequest.BodyPublishers.ofFile(Paths.get("src/main/resources/body.json")))
-            .build();
+import org.json.JSONObject;
 
-    var httpClient = HttpClient.newBuilder()
-            .version(HttpClient.Version.HTTP_1_1)
-            .build();
-    var response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofInputStream());
+import javax.mail.*;
+import java.io.File;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeBodyPart;
+import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.time.Duration;
+import java.util.Properties;
 
-    var statusCode = response.statusCode();
-    if (statusCode == 200 || statusCode == 201) {
-        // save pdf to file targetFile.pdf
-        var targetFile = new File("src/main/resources/targetFile.pdf");
-        Files.copy(response.body(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+public class Application {
 
-        // Send pdf as email attachment
-        var prop = new Properties();
-        prop.put("mail.smtp.auth", true);
-        prop.put("mail.smtp.starttls.enable", "true");
-        prop.put("mail.smtp.host", "smtp.mailtrap.io");
-        prop.put("mail.smtp.port", "25");
-        prop.put("mail.smtp.ssl.trus", "smtp.mailtrap.io");
+    private static final String API_KEY = "";
 
-        var username = "get username from mailtrap.io";
-        var password = "get password from mailtrap.io";
+    public static void main(String... args) throws Exception {
+        byte[] encoded = Files.readAllBytes(Paths.get("src/main/resources/example.html"));
+        String documentContent = new String(encoded, Charset.defaultCharset());
+    
+        var jsonObject = new JSONObject();
+        jsonObject.put("source", documentContent);
+        
+        var httpRequest = HttpRequest.newBuilder()
+                .uri(URI.create("https://api.pdfshift.io/v2/convert"))
+                .timeout(Duration.ofSeconds(10))
+                .header("Content-Type", "application/json")
+                .header("Authentication", API_KEY)
+                .POST(HttpRequest.BodyPublishers.ofString(jsonObject.toString()))
+                .build();
 
-        var session = Session.getInstance(prop, new Authenticator() {
-            @Override
-            protected PasswordAuthentication getPasswordAuthentication() {
-                return new PasswordAuthentication(username, password);
-            }
-        });
+        var httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .build();
+        var response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofInputStream());
 
-        var message = new MimeMessage(session);
-        message.setFrom(new InternetAddress("from@gmail.com"));
-        message.setRecipients(
-                Message.RecipientType.TO, InternetAddress.parse("to@gmail.com")
-        );
-        message.setSubject("Mail Subject");
+        var statusCode = response.statusCode();
+        if (statusCode == 200 || statusCode == 201) {
+            // save pdf to file targetFile.pdf
+            var targetFile = new File("src/main/resources/targetFile.pdf");
+            Files.copy(response.body(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
-        var attachment = new File("src/main/resources/targetFile.pdf");
+            // Send pdf as email attachment
+            var prop = new Properties();
+            prop.put("mail.smtp.auth", true);
+            prop.put("mail.smtp.starttls.enable", "true");
+            prop.put("mail.smtp.host", "smtp.mailtrap.io");
+            prop.put("mail.smtp.port", "25");
+            prop.put("mail.smtp.ssl.trus", "smtp.mailtrap.io");
 
-        var mimeBodyPart = new MimeBodyPart();
-        mimeBodyPart.setContent("Just ignore this message", "text/plain");
-        mimeBodyPart.attachFile(attachment);
+            var username = "get username from mailtrap.io";
+            var password = "get password from mailtrap.io";
 
-        var multipart = new MimeMultipart();
-        multipart.addBodyPart(mimeBodyPart);
+            var session = Session.getInstance(prop, new Authenticator() {
+                @Override
+                protected PasswordAuthentication getPasswordAuthentication() {
+                    return new PasswordAuthentication(username, password);
+                }
+            });
 
-        message.setContent(multipart);
+            var message = new MimeMessage(session);
+            message.setFrom(new InternetAddress("from@gmail.com"));
+            message.setRecipients(
+                    Message.RecipientType.TO, InternetAddress.parse("to@gmail.com")
+            );
+            message.setSubject("Mail Subject");
 
-        Transport.send(message);
-    } else {
-        System.out.println("Error occured");
+            var attachment = new File("src/main/resources/targetFile.pdf");
+
+            var mimeBodyPart = new MimeBodyPart();
+            mimeBodyPart.setContent("Just ignore this message", "text/plain");
+            mimeBodyPart.attachFile(attachment);
+
+            var multipart = new MimeMultipart();
+            multipart.addBodyPart(mimeBodyPart);
+
+            message.setContent(multipart);
+
+            Transport.send(message);
+        } else {
+            System.out.println("Error occured");
+        }
     }
 }
+
 ```
 
 
