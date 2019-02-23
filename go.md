@@ -52,6 +52,47 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
+}
+```
+
+We also highly recommend checking for errors after the conversion is made, before processing the document, in order to avoid issues later on.
+
+```go
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"io/ioutil"
+	"log"
+	"net/http"
+)
+
+func main() {
+	API_KEY := "{put your api key here}"
+
+	message := map[string]interface{}{
+		"source":  "https://example.com",
+		"sandbox": true,
+	}
+
+	bytesRepresentation, err := json.Marshal(message)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	client := http.Client{}
+	request, err := http.NewRequest("POST", "https://api.pdfshift.io/v2/convert", bytes.NewBuffer(bytesRepresentation))
+	if err != nil {
+		log.Fatalln(err)
+	}
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Authorization", "Basic "+API_KEY)
+
+	resp, err := client.Do(request)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 		body, err := ioutil.ReadAll(resp.Body)
@@ -61,7 +102,7 @@ func main() {
 		// write the response to file
 		ioutil.WriteFile("example.pdf", body, 0644)
 	} else {
-        // An error occurred
+		// An error occurred
 		var result map[string]interface{}
 
 		json.NewDecoder(resp.Body).Decode(&result)
@@ -69,32 +110,6 @@ func main() {
 		log.Println(result)
 		log.Println(result["data"])
 	}
-}
-```
-
-We also highly recommend checking for errors after the conversion is made, before processing the document, in order to avoid issues later on.
-
-```go
-resp, err := client.Do(request)
-if err != nil {
-    log.Fatalln(err)
-}
-
-if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-    body, err := ioutil.ReadAll(resp.Body)
-    if err != nil {
-        log.Fatalln(err)
-    }
-    // write the response to file
-    ioutil.WriteFile("example.pdf", body, 0644)
-} else {
-    // An error occurred
-    var result map[string]interface{}
-
-    json.NewDecoder(resp.Body).Decode(&result)
-
-    log.Println(result)
-    log.Println(result["data"])
 }
 ```
 
@@ -110,8 +125,57 @@ No credits are deduced from your account when the sandbox mode is on.
 Converting an URL with PDFShift is really easy. All you have to do is send a POST request with the `source` parameter set to the URL, like the following:
 
 ```go
-message := map[string]interface{}{
-    "source": "https://example.com"
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"io/ioutil"
+	"log"
+	"net/http"
+)
+
+func main() {
+	API_KEY := "{put your API Key here}"
+
+	message := map[string]interface{}{
+		"source":  "https://example.com",
+	}
+
+	bytesRepresentation, err := json.Marshal(message)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	client := http.Client{}
+	request, err := http.NewRequest("POST", "https://api.pdfshift.io/v2/convert", bytes.NewBuffer(bytesRepresentation))
+	if err != nil {
+		log.Fatalln(err)
+	}
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Authorization", "Basic "+API_KEY)
+
+	resp, err := client.Do(request)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		// write the response to file
+		ioutil.WriteFile("example.pdf", body, 0644)
+	} else {
+		// An error occurred
+		var result map[string]interface{}
+
+		json.NewDecoder(resp.Body).Decode(&result)
+
+		log.Println(result)
+		log.Println(result["data"])
+	}
 }
 ```
 
@@ -121,9 +185,67 @@ To convert a raw HTML data with PDFShift, simply send the raw string in the `sou
 
 
 ```go
-message := map[string]interface{}{
-    "source": "<html><head><title>Hello world</title><body><h1>Hello World</h1></body></head></html>"
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"io/ioutil"
+	"log"
+	"net/http"
+)
+
+func main() {
+	API_KEY = "{Put your api key here}"
+
+	encoded, err := ioutil.ReadFile("example.html")
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	documentContent := string(encoded)
+
+	message := map[string]interface{}{
+		"source":  documentContent,
+		"sandbox": true,
+	}
+
+	bytesRepresentation, err := json.Marshal(message)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	client := http.Client{}
+	request, err := http.NewRequest("POST", "https://api.pdfshift.io/v2/convert", bytes.NewBuffer(bytesRepresentation))
+	if err != nil {
+		log.Fatalln(err)
+	}
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Authorization", "Basic "+API_KEY)
+
+	resp, err := client.Do(request)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		// write the response to file
+		ioutil.WriteFile("example.pdf", body, 0644)
+	} else {
+		// An error occurred
+		var result map[string]interface{}
+
+		json.NewDecoder(resp.Body).Decode(&result)
+
+		log.Println(result)
+		log.Println(result["data"])
+	}
 }
+
 ```
 
 ### Save the file to Amazon S3 and get an URL instead
@@ -143,8 +265,10 @@ import (
 )
 
 func main() {
+	API_KEY = "{Put your api key here}"
+
 	message := map[string]interface{}{
-		"source": "<html><head><title>Hello world</title><body><h1>Hello World</h1></body></head></html>",
+		"source": "https://example.com",
 		"filename": "anotherExample.pdf",
 	}
 
@@ -159,6 +283,7 @@ func main() {
 		log.Fatalln(err)
 	}
 	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Authorization", "Basic "+API_KEY)
 
 	resp, err := client.Do(request)
 	if err != nil {
@@ -198,6 +323,8 @@ import (
 )
 
 func main() {
+	API_KEY = "{Put your api key here}"
+
 	message := map[string]interface{}{
 		"source": "https://httpbin.org/basic-auth/user/passwd",
 		"auth": map[string]string{
@@ -217,6 +344,7 @@ func main() {
 		log.Fatalln(err)
 	}
 	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Authorization", "Basic "+API_KEY)
 
 	resp, err := client.Do(request)
 	if err != nil {
@@ -258,6 +386,8 @@ import (
 )
 
 func main() {
+	API_KEY = "{Put your api key here}"
+
 	cookies := make([]map[string]string, 1)
 
 	cookies[0] = make(map[string]string)
@@ -280,6 +410,7 @@ func main() {
 		log.Fatalln(err)
 	}
 	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Authorization", "Basic "+API_KEY)
 
 	resp, err := client.Do(request)
 	if err != nil {
@@ -312,9 +443,56 @@ This allows you to customize the rendering of the page.
 You can also call multiple CSS by calling a root CSS (like "print.css" in that case) that will call @import in it for each CSS files.
 
 ```go
-message := map[string]interface{}{
-    "source": "https://www.example.com",
-    "css": "a {text-decoration: underline; color: blue}",
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"io/ioutil"
+	"log"
+	"net/http"
+)
+
+func main() {
+	API_KEY = "{Put your api key here}"
+
+	message := map[string]interface{}{
+		"source": "https://www.example.com",
+		"css": "https://www.example.com/public/css/print.css",
+	}
+
+	bytesRepresentation, err := json.Marshal(message)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	client := http.Client{}
+	request, err := http.NewRequest("POST", "https://api.pdfshift.io/v2/convert", bytes.NewBuffer(bytesRepresentation))
+	if err != nil {
+		log.Fatalln(err)
+	}
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Authorization", "Basic "+API_KEY)
+
+	resp, err := client.Do(request)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		// write the response to file
+		ioutil.WriteFile("example.pdf", body, 0644)
+	} else {
+		var result map[string]interface{}
+
+		json.NewDecoder(resp.Body).Decode(&result)
+
+		log.Println(result)
+	}
 }
 ```
 
@@ -324,9 +502,56 @@ message := map[string]interface{}{
 Like for the `source` parameter, you can pass a raw set of CSS rules to the `css` parameter and they will be injected to the loaded document.
 
 ```go
-message := map[string]interface{}{
-    "source": "https://www.example.com",
-    "css": "a {text-decoration: underline; color: blue}",
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"io/ioutil"
+	"log"
+	"net/http"
+)
+
+func main() {
+	API_KEY = "{Put your api key here}"
+
+	message := map[string]interface{}{
+		"source": "https://www.example.com",
+		"css": "a {text-decoration: underline; color: blue}",
+	}
+
+	bytesRepresentation, err := json.Marshal(message)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	client := http.Client{}
+	request, err := http.NewRequest("POST", "https://api.pdfshift.io/v2/convert", bytes.NewBuffer(bytesRepresentation))
+	if err != nil {
+		log.Fatalln(err)
+	}
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Authorization", "Basic "+API_KEY)
+
+	resp, err := client.Do(request)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		// write the response to file
+		ioutil.WriteFile("example.pdf", body, 0644)
+	} else {
+		var result map[string]interface{}
+
+		json.NewDecoder(resp.Body).Decode(&result)
+
+		log.Println(result)
+	}
 }
 ```
 
@@ -335,14 +560,61 @@ message := map[string]interface{}{
 Some documents that you share need a watermark to clearly identify your brand. That's easy with PDFShift:
 
 ```go
-message := map[string]interface{}{
-    "source": "https://www.example.com",
-    "watermark": map[string]string{
-        "image": "https://pdfshift.io/static/img/logo.png",
-        "offset_x": 50,
-        "offset_y": "100px",
-        "rotate": 45,
-    },
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"io/ioutil"
+	"log"
+	"net/http"
+)
+
+func main() {
+	API_KEY = "{Put your api key here}"
+
+	message := map[string]interface{}{
+		"source": "https://www.example.com",
+		"watermark": map[string]string{
+			"image": "https://pdfshift.io/static/img/logo.png",
+			"offset_x": 50,
+			"offset_y": "100px",
+			"rotate": 45,
+		},
+	}
+
+	bytesRepresentation, err := json.Marshal(message)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	client := http.Client{}
+	request, err := http.NewRequest("POST", "https://api.pdfshift.io/v2/convert", bytes.NewBuffer(bytesRepresentation))
+	if err != nil {
+		log.Fatalln(err)
+	}
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Authorization", "Basic "+API_KEY)
+
+	resp, err := client.Do(request)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		// write the response to file
+		ioutil.WriteFile("example.pdf", body, 0644)
+	} else {
+		var result map[string]interface{}
+
+		json.NewDecoder(resp.Body).Decode(&result)
+
+		log.Println(result)
+	}
 }
 ```
 
@@ -354,12 +626,59 @@ Note that the header and footer **are not related to the body**. For this reason
 By default, the font-size will be really small. You will have to set it manually, like in the following example:
 
 ```go
-message := map[string]interface{}{
-    "source": "https://www.example.com",
-    "footer": map[string]string{
-        "source": "<div>My custom footer</div>",
-        "spacing": "50px",
-    },
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"io/ioutil"
+	"log"
+	"net/http"
+)
+
+func main() {
+	API_KEY = "{Put your api key here}"
+
+	message := map[string]interface{}{
+		"source": "https://www.example.com",
+		"footer": map[string]string{
+			"source": "<div>My custom footer</div>",
+			"spacing": "50px",
+		},
+	}
+
+	bytesRepresentation, err := json.Marshal(message)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	client := http.Client{}
+	request, err := http.NewRequest("POST", "https://api.pdfshift.io/v2/convert", bytes.NewBuffer(bytesRepresentation))
+	if err != nil {
+		log.Fatalln(err)
+	}
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Authorization", "Basic "+API_KEY)
+
+	resp, err := client.Do(request)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		// write the response to file
+		ioutil.WriteFile("example.pdf", body, 0644)
+	} else {
+		var result map[string]interface{}
+
+		json.NewDecoder(resp.Body).Decode(&result)
+
+		log.Println(result)
+	}
 }
 ```
 
@@ -374,13 +693,60 @@ This means that if you set an empty password for the user, with no rights to pri
 This is outside of our capabilities here at PDFShift as we can't enforce a reader to respect PDF's standard.
 
 ```go
-message := map[string]interface{}{
-    "source": "https://www.example.com",
-    "protection": map[string]interface{}{
-        "user_password": "user",
-        "owner_password": "owner",
-        "no_print": true,
-    },
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"io/ioutil"
+	"log"
+	"net/http"
+)
+
+func main() {
+	API_KEY = "{Put your api key here}"
+
+	message := map[string]interface{}{
+		"source": "https://www.example.com",
+		"protection": map[string]interface{}{
+			"user_password": "user",
+			"owner_password": "owner",
+			"no_print": true,
+		},
+	}
+
+	bytesRepresentation, err := json.Marshal(message)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	client := http.Client{}
+	request, err := http.NewRequest("POST", "https://api.pdfshift.io/v2/convert", bytes.NewBuffer(bytesRepresentation))
+	if err != nil {
+		log.Fatalln(err)
+	}
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Authorization", "Basic "+API_KEY)
+
+	resp, err := client.Do(request)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		// write the response to file
+		ioutil.WriteFile("example.pdf", body, 0644)
+	} else {
+		var result map[string]interface{}
+
+		json.NewDecoder(resp.Body).Decode(&result)
+
+		log.Println(result)
+	}
 }
 ```
 
