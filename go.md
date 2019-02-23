@@ -7,9 +7,15 @@ See the full documentation on [PDFShift's documentation](https://docs.pdfshift.i
 ## Installation
 
 Have the latest version of Go installed
+
+You should install the email package we'll use for this tutorial using 
+
+go get github.com/scorredoira/email
+
 ### Requirements
 
 * Go
+* github.com/scorredoira/email
 
 ## Usage
 
@@ -754,8 +760,88 @@ func main() {
 ### Real life example - Sending an invoice by email
 
 One frequent use of PDFShift is to generate an invoice when receiving a payment, and sending that invoice - in PDF format - by email, to the customer.
+For this we'll use scorredoira's email package we installed above.
 
+```go
+package main
 
+import (
+    "bytes"
+    "encoding/json"
+    "io/ioutil"
+    "log"
+    "net/http"
+    "net/mail"
+    "net/smtp"
+
+    "github.com/scorredoira/email"
+)
+
+func main() {
+    API_KEY := ""
+
+    encoded, err := ioutil.ReadFile("example.html")
+    if err != nil {
+        log.Fatalln(err)
+    }
+
+    documentContent := string(encoded)
+
+    message := map[string]interface{}{
+        "source":  documentContent,
+        "sandbox": true,
+    }
+
+    bytesRepresentation, err := json.Marshal(message)
+    if err != nil {
+        log.Fatalln(err)
+    }
+
+    client := http.Client{}
+    request, err := http.NewRequest("POST", "https://api.pdfshift.io/v2/convert", bytes.NewBuffer(bytesRepresentation))
+    if err != nil {
+        log.Fatalln(err)
+    }
+    request.Header.Set("Content-Type", "application/json")
+    request.Header.Set("Authorization", "Basic "+API_KEY)
+
+    resp, err := client.Do(request)
+    if err != nil {
+        log.Fatalln(err)
+    }
+
+    if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+        body, err := ioutil.ReadAll(resp.Body)
+        if err != nil {
+            log.Fatalln(err)
+        }
+                // write the response to file
+                ioutil.WriteFile("example.pdf", body, 0644)
+
+        // Send email
+                m := email.NewMessage("Hi", "This is an example converted file")
+                m.From = mail.Address{Name: "From", Address: "from@example.com"}
+                m.To = []string{"to@example.com"}
+
+                if err := m.Attach("example.pdf"); err != nil {
+                    log.Fatalln(err)
+                }
+
+                auth := smtp.PlainAuth("", "c33e0593149230", "84d1dec05f668b", "smtp.mailtrap.io")
+                if err := email.Send("smtp.mailtrap.io:2525", auth, m); err != nil {
+                    log.Fatalln(err)
+                }
+    } else {
+        // An error occurred
+        var result map[string]interface{}
+
+        json.NewDecoder(resp.Body).Decode(&result)
+
+        log.Println(result)
+        log.Println(result["data"])
+    }
+}
+```
 
 
 
