@@ -358,11 +358,12 @@ func main() {
 	}
 
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-		var result map[string]interface{}
-
-		json.NewDecoder(resp.Body).Decode(&result)
-
-		log.Println(result["url"])
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		// write the response to file
+		ioutil.WriteFile("example.pdf", body, 0644)
 	} else {
         // An error occurred
 		var result map[string]interface{}
