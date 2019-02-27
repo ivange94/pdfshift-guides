@@ -313,6 +313,67 @@ func main() {
 }
 ```
 
+### Custom HTTP Headers
+
+You can pass custom HTTP headers, allowing you to adapt to the server handling your source. This can be a custom identification header, changing the language, or anything else.
+
+```go
+package main
+
+import (
+	"net/http"
+	"log"
+	"encoding/json"
+	"bytes"
+	
+)
+
+func main() {
+	API_KEY = "{Put your api key here}"
+
+	message := map[string]interface{}{
+		"source": "https://example.com",
+		"headers": map[string]string{
+			"X-Original-Header": "Awesome value",
+			"user-agent": "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0",
+		},
+	}
+
+	bytesRepresentation, err := json.Marshal(message)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	client := http.Client{}
+	request, err := http.NewRequest("POST", "https://api.pdfshift.io/v2/convert", bytes.NewBuffer(bytesRepresentation))
+	if err != nil {
+		log.Fatalln(err)
+	}
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Authorization", "Basic "+API_KEY)
+
+	resp, err := client.Do(request)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		var result map[string]interface{}
+
+		json.NewDecoder(resp.Body).Decode(&result)
+
+		log.Println(result["url"])
+	} else {
+        // An error occurred
+		var result map[string]interface{}
+
+		json.NewDecoder(resp.Body).Decode(&result)
+
+		log.Println(result)
+	}
+}
+```
+
 ### Accessing secured pages
 
 If your `source` requires a BASIC AUTH mechanism, you can either use the custom headers part or use the `auth` parameter from the API that behaves the same.

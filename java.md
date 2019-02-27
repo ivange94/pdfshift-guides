@@ -283,6 +283,57 @@ public class Application {
 }
 ```
 
+### Custom HTTP Headers
+
+You can pass custom HTTP headers, allowing you to adapt to the server handling your source. This can be a custom identification header, changing the language, or anything else.
+
+```java
+import org.json.JSONObject;
+
+import java.io.File;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.time.Duration;
+
+public class Application {
+
+    private static final String API_KEY = "";
+
+    public static void main(String... args) throws Exception {
+        var jsonObject = new JSONObject();
+        jsonObject.put("source", "https://example.com");
+
+        var headers = new JSONObject();
+        headers.put("X-Original-Header", "Awesome value");
+        headers.put("user-agent", "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0");
+
+        jsonObject.put("headers", headers);
+
+        var httpRequest = HttpRequest.newBuilder()
+                .uri(URI.create("https://api.pdfshift.io/v2/convert"))
+                .timeout(Duration.ofSeconds(20))
+                .header("Content-Type", "application/json")
+               // .header("Authentication", "Basic " + API_KEY)
+                .POST(HttpRequest.BodyPublishers.ofString(jsonObject.toString()))
+                .build();
+
+        var httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .build();
+
+        var response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofInputStream());
+
+        // Save the file locally
+        var targetFile = new File("src/main/resources/targetFile.pdf");
+        Files.copy(response.body(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+    }
+}
+```
+
 ### Accessing secured pages
 
 If your `source` requires a BASIC AUTH mechanism, you can either use the custom headers part or use the `auth` parameter from the API that behaves the same.
